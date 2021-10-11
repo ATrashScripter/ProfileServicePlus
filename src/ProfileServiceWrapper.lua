@@ -8,9 +8,9 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local ProfileService = require(script.Parent.ProfileService) 
-local Signal = require(script.Parent.Signal)
-local Config = require(script.Parent.Config)
+local ProfileService = require(script.ProfileService) 
+local Signal = require(script.Signal)
+local Config = require(script.Config)
 
 local ProfileServiceWrapper = { 
 	ProfileAdded = Signal.new(),
@@ -109,7 +109,7 @@ local function setProxy(tbl): table
 
 		for k, v in pairs(tbl) do
 			if typeof(v) == "table" then
-				setProxy(tbl)
+				tbl[k] = setProxy(v)
 			end
 		end
 
@@ -131,11 +131,10 @@ local function setProxy(tbl): table
 	return self
 end
 
-
 --Runs after a profile has successfully loaded
 local function onProfileAdded(profile, player)
 	if Config.AUTOMATICALLY_UPDATE_LEADERSTATS then
-		profile.DataChanged:Connect(function(key, value)
+		profile.Data.DataChanged:Connect(function(key, value)
 			local leaderstats = player:FindFirstChild("leaderstats")
 			if leaderstats then
 				if leaderstats[key] then
@@ -168,7 +167,9 @@ end
 
 local function loadProfile(player, storeKey, not_released_handler)
 	local loadedProfileStore = Loaded_Profile_Stores[storeKey]
-
+	
+	local data = Config.GAME_PROFILE_TEMPLATES[storeKey]
+	
 	local playerKey
 	if data._Key ~= nil then
 		playerKey = getPlayerkey(player, data)
@@ -213,6 +214,7 @@ local function loadProfile(player, storeKey, not_released_handler)
 
 			
 			ProfileServiceWrapper.ProfileAdded:Fire(playerProfile, loadedProfileStore, player)
+			return playerProfile
 		else
 			print("Player left before profile loaded, releasing profile")
 			playerProfile:Release()
@@ -237,7 +239,9 @@ local function onPlayerAdded(player)
 		end
 		
 		local playerProfile = loadProfile(player, storeKey)
+		print(playerProfile)
 		if playerProfile then
+			LoadedProfiles[storeKey][player] = playerProfile
 			loaded += 1
 		end
 	end
@@ -283,7 +287,7 @@ local function Init()
 				storeKey,
 				data
 			)
-			Loaded_Profile_Stores.Key = data._Key
+			Loaded_Profile_Stores[storeKey].Key = storeKey
 		end
 		
 		for _, player in ipairs(Players:GetPlayers()) do
@@ -399,3 +403,5 @@ end
 
 
 return ProfileServiceWrapper
+
+
