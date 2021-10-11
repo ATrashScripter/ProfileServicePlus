@@ -4,8 +4,11 @@ local Config = {
 	GAME_PROFILE_TEMPLATES = {
 		PlayerStats = {
 			_Key = "PlayerStats-UserId",
-			LoadOnJoin = true,
+			_LoadOnJoin = true,
 			Gold = 0,
+			Level = 1,
+			Inventory = {
+				"Turret",
 			}
 		},
 	},
