@@ -33,8 +33,6 @@ local Loaded_Profiles = {}
 local Loaded_Profile_Stores = {}
 
 
-
-
 local function handleLockedUpdate(profile: table, update, player)
 	local globalUpdates = profile.GlobalUpdates
 	print("[PSPlus]: New locked update added")
