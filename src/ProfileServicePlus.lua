@@ -8,9 +8,9 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local ProfileService = require(script.ProfileService) 
-local Signal = require(script.Signal)
-local Config = require(script.Config)
+local ProfileService = require(script.ProfileService or script.Parent.ProfileService) 
+local Signal = require(script.Signal or script.Parent.Signal)
+local Config = require(script.Config or script.Parent.Config)
 
 local ProfileServicePlus = { 
 	ProfileAdded = Signal.new(),
@@ -25,16 +25,6 @@ local Global_Update_Types = {}
 local Loaded_Profiles = {}
 local Loaded_Profile_Stores = {}
 
---Custom assert function
-local function assert(condition: boolean, errorMsg, warnOnly: boolean)
-	if not condition then
-		if warnOnly then
-			warn(errorMsg)
-		else	
-			error(errorMsg, 3)
-		end
-	end
-end
 
 
 
