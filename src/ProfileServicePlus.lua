@@ -145,7 +145,7 @@ local function setProxy(tbl: table): table
 
 	for k, v in pairs(tbl) do
 		if type(v) == "table" then
-			setProxy(tbl)
+			tbl[k] = setProxy(v)
 		end
 	end
 
