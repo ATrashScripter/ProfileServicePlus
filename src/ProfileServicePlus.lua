@@ -36,18 +36,27 @@
 
 	Example: 
 	
-	-Script 1
+	[Script 1]
 
 	local profile = ProfileServicePlus:LoadProfile(player, "Leaderstats")
 	
-	-Script 2
+	[Script 2]
 
 	--Suppose the profile has already been loaded
 	local profile = ProfileServicePlus:GetProfile(player, "Leaderstats")
 	print(profile.Data.Coins)
 
 
-	<table> ProfileServicePlus:
+	<table> ProfileServicePlus:GetProfiles(<string> storeKey) - Returns a table of profiles based on the storeKey or returns the Loaded_Profiles talbe itself
+
+	Example:
+
+	for player, profile in pairs(ProfileServicePlus:GetProfiles("Leaderstats")) do
+		print(profile.Data.Coins)
+	end
+
+
+	
 --]]
 
 --Dependancies
