@@ -32,8 +32,8 @@ local Global_Update_Types = {}
 local Loaded_Profiles = {}
 local Loaded_Profile_Stores = {}
 
-
-local function handleLockedUpdate(profile: table, update, player)
+--Handles locked global updates
+local function handleLockedUpdate(profile: table, update, player: Instance)
 	local globalUpdates = profile.GlobalUpdates
 	print("[PSPlus]: New locked update added")
 	
@@ -121,14 +121,14 @@ local function onProfileAdded(profile: table, player: string)
 end
 
 
-
+--Returns the default key for the profile
 local function getDefaultKey(player: string, profileStoreKey: string): string
 	local playerKey = profileStoreKey.. "-%s"
 	
 	return playerKey:format(tostring(player.UserId))
 end
 
-
+--Returns a player's profile key
 local function getPlayerkey(player: string, profileStore: table): string
 	local playerKey
 	local profileKey = profileStore._Key
@@ -140,7 +140,7 @@ local function getPlayerkey(player: string, profileStore: table): string
 	return playerKey
 end
 
-
+--Destroys all profile.Data.DataChanged or table.KeyChanged signals
 local function destroyAllSignals(tbl)
 	local signal = tbl.DataChanged or tbl.KeyChanged
 	if signal then
@@ -153,8 +153,8 @@ local function destroyAllSignals(tbl)
 	end
 end
 
-
-local function releaseProfile(player: Instance, storeKey: string): boolean
+--Runs whenever ProfileServicePlus:ReleaseProfile() is called or when a player leaves the game
+local function releaseProfile(player: Instance, storeKey: string)
 	local success, result = pcall(function()
 		local profileStore = Loaded_Profile_Stores[storeKey]
 		local playerProfile = Loaded_Profiles[storeKey][player]
@@ -168,6 +168,8 @@ local function releaseProfile(player: Instance, storeKey: string): boolean
 	return success, result
 end
 
+
+--Runs whenever ProfileServicePlus:LoadProfile() is called or when a player joins the game
 local function loadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	local loadedProfileStore = Loaded_Profile_Stores[storeKey]
 	
@@ -227,7 +229,7 @@ local function loadProfile(player: Instance, storeKey: string, not_released_hand
 	end
 end
 
-
+--Runs whenever a player joins the game
 local function onPlayerAdded(player)
 	local total = 0
 	local loaded = 0
@@ -242,7 +244,6 @@ local function onPlayerAdded(player)
 		end
 		
 		local playerProfile = loadProfile(player, storeKey)
-		print(playerProfile)
 		if playerProfile then
 			Loaded_Profiles[storeKey][player] = playerProfile
 			loaded += 1
@@ -253,7 +254,7 @@ local function onPlayerAdded(player)
 end
 
 
-
+--Runs whenever a player leaves the game
 local function onPlayerRemoving(player)
 	local released = 0
 	local total = 0
@@ -265,10 +266,7 @@ local function onPlayerRemoving(player)
 	for storeKey, profileStores in pairs(Loaded_Profiles) do
 		local playerProfile = profileStores[player]
 		if playerProfile ~= nil then
-			playerProfile.Data = playerProfile.Data._state
-			local profileStore = ProfileServicePlus:GetProfileStore(storeKey)
-			ProfileServicePlus.ProfileRemoving:Fire(playerProfile, profileStore, player)
-			playerProfile:Release()
+			local success = releaseProfile(player, storeKey)
 			released += 1
 		end
 	end
@@ -303,7 +301,7 @@ local function Init()
 	end
 end
 
-
+--Initiates the module
 if not ProfileServicePlus.initiated and RunService:IsServer() then
 	Init()
 end
@@ -312,7 +310,7 @@ end
 ProfileServicePlus.ProfileAdded:Connect(onProfileAdded)
 
 
-
+--Adds a global update type that calls back the passed listener whenever a global update with the same Type value as the passed updateType argument
 function ProfileServicePlus:AddGlobalUpdateType(updateType: string, listener, overwriteExisting: boolean)
 	--Type check updateType
 	
@@ -330,7 +328,7 @@ end
 
 
 
-
+--Returns a player instance from the passed profile argument
 function ProfileServicePlus:GetPlayerFromProfile(profileInput)
 	local output
 
@@ -349,14 +347,14 @@ function ProfileServicePlus:GetPlayerFromProfile(profileInput)
 end
 
 
-
+--Returns the player's profile key. Mainly used for global updates
 function ProfileServicePlus:GetPlayerProfileKey(storeKey: string, player: Instance)
 	local profileStore = Config.GAME_PROFILE_TEMPLATES[storeKey]
 
 	return getPlayerkey(player, profileStore)
 end
 
-
+--Returns a ProfileStore
 function ProfileServicePlus:GetProfileStore(storeKey: string)
 	local profileStore = Loaded_Profile_Stores[storeKey]
 
@@ -365,18 +363,19 @@ end
 
 
 
---Returns player's profile on a specific profile store key
+--Returns a player's specific profile
 function ProfileServicePlus:GetProfile(player: Instance, profileKey: string)
 	local playerProfile = Loaded_Profiles[profileKey][player]
 
 	return playerProfile
 end
 
-
+--Loads a player's specific profile
 function ProfileServicePlus:LoadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	return loadProfile(player, storeKey, not_released_handler)
 end
 
+--Releases a player's speific profile 
 function ProfileServicePlus:ReleaseProfile(player: Instance, storeKey: string)
 	return releaseProfile(player, storeKey)
 end
