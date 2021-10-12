@@ -141,11 +141,25 @@ local function getPlayerkey(player: string, profileStore: table): string
 end
 
 
+local function destroyAllSignals(tbl)
+	local signal = tbl.DataChanged or tbl.KeyChanged
+	if signal then
+	    signal:Destroy()
+	end
+	for _, v in pairs(tbl) do
+		if typeof(v) == "table" then
+			destroyAllSignals(tbl)
+		end
+	end
+end
+
+
 local function releaseProfile(player: Instance, storeKey: string): boolean
 	local success, result = pcall(function()
 		local profileStore = Loaded_Profile_Stores[storeKey]
 		local playerProfile = Loaded_Profiles[storeKey][player]
-	
+		
+		destroyAllSignals(tbl)
 		playerProfile.Data = playerProfile.Data._state
 		ProfileServicePlus.ProfileRemoving:Fire(playerProfile, profileStore, player)
 		playerProfile:Release()
