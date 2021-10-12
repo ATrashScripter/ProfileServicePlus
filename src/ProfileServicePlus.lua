@@ -154,9 +154,6 @@ local function releaseProfile(player: Instance, storeKey: string): boolean
 	return success, result
 end
 
-releaseProfile()
-
-
 local function loadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	local loadedProfileStore = Loaded_Profile_Stores[storeKey]
 	
