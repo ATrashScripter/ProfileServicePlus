@@ -56,7 +56,7 @@
 	end
 
 
-	
+
 --]]
 
 --Dependancies
@@ -269,8 +269,8 @@ local function loadProfile(player: Instance, storeKey: string, not_released_hand
 			ProfileServicePlus.ProfileAdded:Fire(playerProfile, loadedProfileStore, player)
 			return playerProfile
 		else
-			print("[ProfileService+]: Player left before profile loaded, releasing profile")
-			playerProfile:Release()
+			print("[PSPlus]: Player left before profile loaded, releasing profile")
+			ProfileServicePlus:ReleaseProfile(player, storeKey)
 		end
 	else
 		player:Kick("Profile could'nt load because other Roblox servers were trying to load it")
@@ -315,7 +315,9 @@ local function onPlayerRemoving(player)
 		local playerProfile = profileStores[player]
 		if playerProfile ~= nil then
 			local success = releaseProfile(player, storeKey)
-			released += 1
+			if success then
+				released += 1
+			end
 		end
 	end
 
