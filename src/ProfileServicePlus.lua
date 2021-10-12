@@ -83,7 +83,7 @@ local function setProxy(tbl: table): table
 		self.DataChanged = Signal.new()
 
 		for k, v in pairs(tbl) do
-			if typeof(v) == "table" then
+			if type(v) == "table" then
 				tbl[k] = setProxy(v)
 			end
 		end
@@ -96,7 +96,7 @@ local function setProxy(tbl: table): table
 	self.KeyChanged = Signal.new()
 
 	for k, v in pairs(tbl) do
-		if typeof(v) == "table" then
+		if type(v) == "table" then
 			setProxy(tbl)
 		end
 	end
@@ -147,7 +147,7 @@ local function destroyAllSignals(tbl)
 	    signal:Destroy()
 	end
 	for _, v in pairs(tbl) do
-		if typeof(v) == "table" then
+		if type(v) == "table" then
 			destroyAllSignals(tbl)
 		end
 	end
