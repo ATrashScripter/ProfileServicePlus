@@ -1,3 +1,3 @@
 # ProfileServiceWrapper
 
-A ProfileService extension for handling ProfileService easier
+A ProfileService extension for handling Profiles easier
