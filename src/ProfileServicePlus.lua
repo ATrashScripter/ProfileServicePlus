@@ -5,10 +5,49 @@
 	API
 
 	ProfileServicePlus
-
-	ProfileServicePlus.ProfileAdded - A signal that fires every time a profile is loaded through ProfileServicePlus:LoadProfile()
-	ProfileServicePlus.ProfileRemoving - A signal that fires
 	
+	VARIABLES
+
+	ProfileServicePlus.ProfileAdded - A signal that fires every time a profile is loaded through ProfileServicePlus:LoadProfile() 
+	ProfileServicePlus.ProfileRemoving - A signal that fires every time a profile is released through ProfileServicePlus:ReleaseProfile()
+	ProfileServicePlus.intiated - a boolean value for checking if the module has already initiated
+	
+	METHODS
+
+	<table> ProfileServiceWrapper:LoadProfile(<Instance> player, <string> storeKey) - Attempts to load a profile
+
+	Example:
+	
+	local profile = ProfileServicePlus:LoadProfile(player, "Leaderstats")
+	if profile then
+		print(profile.Data.Coins)
+	end
+
+	<boolean>, <any> ProfileServicePlus:ReleaseProfile(<Instance> player, <string> storeKey) - Releases a profile
+	
+	Example:
+		
+	local success, result = ProfileServicePlus:ReleaseProfile(player, "Leaderstats")
+	if success then
+		print("Profile released successfully!")
+	end
+
+	<table> ProfileServicePlus:GetProfile(<Instance> player, <string> storeKey) - Attempts to return a loaded profile
+
+	Example: 
+	
+	-Script 1
+
+	local profile = ProfileServicePlus:LoadProfile(player, "Leaderstats")
+	
+	-Script 2
+
+	--Suppose the profile has already been loaded
+	local profile = ProfileServicePlus:GetProfile(player, "Leaderstats")
+	print(profile.Data.Coins)
+
+
+	<table> ProfileServicePlus:
 --]]
 
 --Dependancies
@@ -370,18 +409,18 @@ function ProfileServicePlus:GetProfile(player: Instance, profileKey: string)
 	return playerProfile
 end
 
---Loads a player's specific profile
+--Attempts to load a player's specific profile
 function ProfileServicePlus:LoadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	return loadProfile(player, storeKey, not_released_handler)
 end
 
---Releases a player's speific profile 
+--Attempts to release a player's speific profile 
 function ProfileServicePlus:ReleaseProfile(player: Instance, storeKey: string)
 	return releaseProfile(player, storeKey)
 end
 
 
---Returns table of profiles
+--Returns a table of profiles
 function ProfileServicePlus:GetProfiles(profileStoreKey: string)
 	if profileStoreKey == nil then
 		return Loaded_Profiles 
