@@ -1,7 +1,14 @@
 --[[
 	By: ATrashScripter, ATrashScripter#9599
 	V1.00
-	-- no docs yet
+	
+	API
+
+	ProfileServicePlus
+
+	ProfileServicePlus.ProfileAdded - A signal that fires every time a profile is loaded through ProfileServicePlus:LoadProfile()
+	ProfileServicePlus.ProfileRemoving - A signal that fires
+	
 --]]
 
 --Dependancies
@@ -28,7 +35,8 @@ local Loaded_Profile_Stores = {}
 
 
 
-local function handleLockedUpdate(globalUpdates, update, fakeProfile, player)
+local function handleLockedUpdate(profile: table, update, player)
+	local globalUpdates = profile.GlobalUpdates
 	print("[PSPlus]: New locked update added")
 	
 	local updateID = update[1]
@@ -38,7 +46,7 @@ local function handleLockedUpdate(globalUpdates, update, fakeProfile, player)
 	local listener = Global_Update_Types[updateData.Type]
 	if listener ~= nil then
 		--Fire the listener
-		listener(fakeProfile, updateData, player)
+		listener(profile, updateData, player)
 	else
 		warn(("[PSPlus]: No listener found for update %s!"):format(updateID))
 	end
@@ -49,7 +57,7 @@ end
 
 
 --Proxy for profile.Data for DataChanged or KeyChanged events
-local function setProxy(tbl): table
+local function setProxy(tbl: table): table
 	local self = {}
 	self._state = {}
 
@@ -101,7 +109,7 @@ local function setProxy(tbl): table
 end
 
 --Runs after a profile has successfully loaded
-local function onProfileAdded(profile, player)
+local function onProfileAdded(profile: table, player: string)
 	if Config.AUTOMATICALLY_UPDATE_LEADERSTATS then
 		profile.Data.DataChanged:Connect(function(key, value)
 			local leaderstats = player:FindFirstChild("leaderstats")
@@ -116,14 +124,14 @@ end
 
 
 
-local function getDefaultKey(player, profileStoreKey)
+local function getDefaultKey(player: string, profileStoreKey: string): string
 	local playerKey = profileStoreKey.. "-%s"
 	
 	return playerKey:format(tostring(player.UserId))
 end
 
 
-local function getPlayerkey(player, profileStore)
+local function getPlayerkey(player: string, profileStore: table): string
 	local playerKey
 	local profileKey = profileStore._Key
 
@@ -135,13 +143,17 @@ local function getPlayerkey(player, profileStore)
 end
 
 
-local function releaseProfile(player: Instance, storeKey: string)
-	local profileStore = Loaded_Profile_Stores[storeKey]
-	local playerProfile = Loaded_Profiles[storeKey][player]
+local function releaseProfile(player: Instance, storeKey: string): boolean
+	local success, result = pcall(function()
+		local profileStore = Loaded_Profile_Stores[storeKey]
+		local playerProfile = Loaded_Profiles[storeKey][player]
+	
+		playerProfile.Data = playerProfile.Data._state
+		ProfileServicePlus.ProfileRemoving:Fire(playerProfile, profileStore, player)
+		playerProfile:Release()
+	end)
 
-	playerProfile.Data = playerProfile.Data._state
-	ProfileServicePlus.ProfileRemoving:Fire(playerProfile, profileStore, player)
-	playerProfile:Release()
+	return success, result
 end
 
 releaseProfile()
@@ -182,7 +194,7 @@ local function loadProfile(player: Instance, storeKey: string, not_released_hand
 			end
 
 			for i, lockedUpdate in pairs(globalUpdates:GetLockedUpdates()) do
-				handleLockedUpdate(globalUpdates, lockedUpdate, playerProfile, player)
+				handleLockedUpdate(playerProfile, lockedUpdate , player)
 			end
 
 			globalUpdates:ListenToNewActiveUpdate(function(updateID, updateData)
@@ -191,7 +203,7 @@ local function loadProfile(player: Instance, storeKey: string, not_released_hand
 			end)
 
 			globalUpdates:ListenToNewLockedUpdate(function(updateID, updateData)
-				handleLockedUpdate(globalUpdates, {updateID, updateData}, playerProfile, player)
+				handleLockedUpdate(playerProfile, {updateID, updateData} , player)
 			end)
 
 			
@@ -354,6 +366,10 @@ end
 
 function ProfileServicePlus:LoadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	return loadProfile(player, storeKey, not_released_handler)
+end
+
+function ProfileServicePlus:ReleaseProfile(player: Instance, storeKey: string)
+	return releaseProfile(player, storeKey)
 end
 
 
