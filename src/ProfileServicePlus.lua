@@ -198,7 +198,7 @@ local function releaseProfile(player: Instance, storeKey: string)
 		local profileStore = Loaded_Profile_Stores[storeKey]
 		local playerProfile = Loaded_Profiles[storeKey][player]
 		
-		destroyAllSignals(tbl)
+		destroyAllSignals(playerProfile.Data)
 		playerProfile.Data = playerProfile.Data._state
 		ProfileServicePlus.ProfileRemoving:Fire(playerProfile, profileStore, player)
 		playerProfile:Release()
