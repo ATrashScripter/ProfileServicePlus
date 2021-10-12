@@ -115,6 +115,8 @@ function Signal:Connect(fn)
 	else
 		self._handlerListHead = connection
 	end
+	self._maid:GiveTask(connection)
+	
 	return connection
 end
 
