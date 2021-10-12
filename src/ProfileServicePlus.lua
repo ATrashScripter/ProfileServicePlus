@@ -46,7 +46,7 @@ local function handleLockedUpdate(profile: table, update, player)
 	local listener = Global_Update_Types[updateData.Type]
 	if listener ~= nil then
 		--Fire the listener
-		listener(profile, updateData, player)
+		task.spawn(listener, profile, updateData, player)
 	else
 		warn(("[PSPlus]: No listener found for update %s!"):format(updateID))
 	end
@@ -59,7 +59,7 @@ end
 --Proxy for profile.Data for DataChanged or KeyChanged events
 local function setProxy(tbl: table): table
 	local self = {}
-	self._state = {}
+	self._state = tbl
 
 	--uncommenting this soon after table.freeze goes live
 	--table.freeze(self._state)
