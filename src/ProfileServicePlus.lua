@@ -148,7 +148,7 @@ local function destroyAllSignals(tbl)
 	end
 	for _, v in pairs(tbl) do
 		if type(v) == "table" then
-			destroyAllSignals(tbl)
+			destroyAllSignals(v)
 		end
 	end
 end
