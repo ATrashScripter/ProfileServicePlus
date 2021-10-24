@@ -16,47 +16,15 @@
 
 	<table> ProfileServiceWrapper:LoadProfile(<Instance> player, <string> storeKey) - Attempts to load a profile
 
-	Example:
-	
-	local profile = ProfileServicePlus:LoadProfile(player, "Leaderstats")
-	if profile then
-		print(profile.Data.Coins)
-	end
-
 	<boolean>, <any> ProfileServicePlus:ReleaseProfile(<Instance> player, <string> storeKey) - Releases a profile
 	
-	Example:
-		
-	local success, result = ProfileServicePlus:ReleaseProfile(player, "Leaderstats")
-	if success then
-		print("Profile released successfully!")
-	end
 
 	<table> ProfileServicePlus:GetProfile(<Instance> player, <string> storeKey) - Attempts to return a loaded profile
-
-	Example: 
 	
-	[Script 1]
 
-	local profile = ProfileServicePlus:LoadProfile(player, "Leaderstats")
-	
-	[Script 2]
+	<table> ProfileServicePlus:GetProfiles(<string> storeKey) - Returns a table of profiles based on the storeKey or returns the Loaded_Profiles table itself
 
-	--Suppose the profile has already been loaded
-	local profile = ProfileServicePlus:GetProfile(player, "Leaderstats")
-	print(profile.Data.Coins)
-
-
-	<table> ProfileServicePlus:GetProfiles(<string> storeKey) - Returns a table of profiles based on the storeKey or returns the Loaded_Profiles talbe itself
-
-	Example:
-
-	for player, profile in pairs(ProfileServicePlus:GetProfiles("Leaderstats")) do
-		print(profile.Data.Coins)
-	end
-
-
-
+	Not Done
 --]]
 
 --Dependancies
@@ -70,7 +38,7 @@ local Config = require(script.Config or script.Parent.Config)
 local ProfileServicePlus = { 
 	ProfileAdded = Signal.new(),
 	ProfileRemoving = Signal.new(),
-	initiated = false, --boolean if module has initialized
+	Initialized = false, --boolean if module has initialized
 }
 
 
@@ -84,10 +52,10 @@ local Loaded_Profile_Stores = {}
 local function handleLockedUpdate(profile: table, update, player: Instance)
 	local globalUpdates = profile.GlobalUpdates
 	print("[PSPlus]: New locked update added")
-	
+
 	local updateID = update[1]
 	local updateData = update[2]
-	
+
 	--Check if update type exists in Global_Update_Types
 	local listener = Global_Update_Types[updateData.Type]
 	if listener ~= nil then
@@ -102,69 +70,18 @@ local function handleLockedUpdate(profile: table, update, player: Instance)
 end
 
 
---Proxy for profile.Data for DataChanged or KeyChanged events
-local function setProxy(tbl: table): table
-	local self = {}
-	self._state = tbl
-
-	--uncommenting this soon after table.freeze goes live
-	--table.freeze(self._state)
-
-	local meta = {
-		__index = function(self, index)
-			return tbl[index]
-		end,
-		__newindex = function(self, index, value)
-			if tbl[index] ~= nil then
-				if tbl._Key and self.DataChanged then
-					tbl[index] = value
-					self.DataChanged:Fire()
-				else
-					tbl[index] = value
-				end
-			end
-		end
-	}
-
-
-	if tbl._Key ~= nil then
-		self.DataChanged = Signal.new()
-
-		for k, v in pairs(tbl) do
-			if type(v) == "table" then
-				tbl[k] = setProxy(v)
-			end
-		end
-
-		setmetatable(self, meta)
-
-		return self
-	end
-
-	self.KeyChanged = Signal.new()
-
-	for k, v in pairs(tbl) do
-		if type(v) == "table" then
-			tbl[k] = setProxy(v)
-		end
-	end
-
-	setmetatable(self, meta)
-
-	return self
-end
 
 --Runs after a profile has successfully loaded
 local function onProfileAdded(profile: table, player: string)
 	if Config.AUTOMATICALLY_UPDATE_LEADERSTATS then
-		profile.Data.DataChanged:Connect(function(key, value)
+		--[[profile.Data.DataChanged:Connect(function(key, value)
 			local leaderstats = player:FindFirstChild("leaderstats")
 			if leaderstats then
 				if leaderstats[key] then
 					leaderstats[key].Value = value
 				end
 			end
-		end)
+		end)--]]
 	end
 end
 
@@ -172,7 +89,7 @@ end
 --Returns the default key for the profile
 local function getDefaultKey(player: string, profileStoreKey: string): string
 	local playerKey = profileStoreKey.. "-%s"
-	
+
 	return playerKey:format(tostring(player.UserId))
 end
 
@@ -192,8 +109,9 @@ end
 local function destroyAllSignals(tbl)
 	local signal = tbl.DataChanged or tbl.KeyChanged
 	if signal then
-	    signal:Destroy()
+		signal:DisconnectAll()
 	end
+	
 	for _, v in pairs(tbl) do
 		if type(v) == "table" then
 			destroyAllSignals(v)
@@ -203,26 +121,21 @@ end
 
 --Runs whenever ProfileServicePlus:ReleaseProfile() is called or when a player leaves the game
 local function releaseProfile(player: Instance, storeKey: string)
-	local success, result = pcall(function()
-		local profileStore = Loaded_Profile_Stores[storeKey]
-		local playerProfile = Loaded_Profiles[storeKey][player]
-		
-		destroyAllSignals(playerProfile.Data)
-		playerProfile.Data = playerProfile.Data._state
+	local profileStore = Loaded_Profile_Stores[storeKey]
+	local playerProfile = Loaded_Profiles[storeKey][player]
+	if playerProfile then
 		ProfileServicePlus.ProfileRemoving:Fire(playerProfile, profileStore, player)
 		playerProfile:Release()
-	end)
-
-	return success, result
+	end
 end
 
 
 --Runs whenever ProfileServicePlus:LoadProfile() is called or when a player joins the game
 local function loadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	local loadedProfileStore = Loaded_Profile_Stores[storeKey]
-	
+
 	local data = Config.GAME_PROFILE_TEMPLATES[storeKey]
-	
+
 	local playerKey
 	if data._Key ~= nil then
 		playerKey = getPlayerkey(player, data)
@@ -243,9 +156,6 @@ local function loadProfile(player: Instance, storeKey: string, not_released_hand
 		end)
 
 		if player:IsDescendantOf(Players) then
-			--Get fake profile of the player
-			playerProfile.Data = setProxy(playerProfile.Data)
-
 			local globalUpdates = playerProfile.GlobalUpdates
 
 			for i, update in pairs(globalUpdates:GetActiveUpdates()) do
@@ -265,7 +175,7 @@ local function loadProfile(player: Instance, storeKey: string, not_released_hand
 				handleLockedUpdate(playerProfile, {updateID, updateData} , player)
 			end)
 
-			
+
 			ProfileServicePlus.ProfileAdded:Fire(playerProfile, loadedProfileStore, player)
 			return playerProfile
 		else
@@ -281,23 +191,23 @@ end
 local function onPlayerAdded(player)
 	local total = 0
 	local loaded = 0
-	
+
 	for _, _ in pairs(Config.GAME_PROFILE_TEMPLATES) do
 		total += 1
 	end
-	
+
 	for storeKey, data in pairs(Config.GAME_PROFILE_TEMPLATES) do
-		if not data._LoadOnJoin then
+		if not data._LoadOnJoin and not Config.LOAD_ALL_PROFILES_ON_JOIN then
 			continue
 		end
-		
+
 		local playerProfile = loadProfile(player, storeKey)
 		if playerProfile then
 			Loaded_Profiles[storeKey][player] = playerProfile
 			loaded += 1
 		end
 	end
-	
+
 	print(("[PSPlus]: Successfully loaded %s/%s profiles"):format(loaded, total))
 end
 
@@ -331,7 +241,7 @@ local function Init()
 		warn("[PSPlus]: ProfileServicePlus has already initiated")
 	else
 		ProfileServicePlus.initiated = true
-		
+
 		for storeKey, data in pairs(Config.GAME_PROFILE_TEMPLATES) do
 			Loaded_Profiles[storeKey] = {}
 			Loaded_Profile_Stores[storeKey] = ProfileService.GetProfileStore(
@@ -340,19 +250,19 @@ local function Init()
 			)
 			Loaded_Profile_Stores[storeKey].Key = storeKey
 		end
-		
+
 		for _, player in ipairs(Players:GetPlayers()) do
 			task.spawn(onPlayerAdded, player)
 		end
 
 		Players.PlayerAdded:Connect(onPlayerAdded)
-		Players.PlayerRemoving:Connect(onPlayerRemoving)
-		print("[PSPlus]: Intitiated ProfileServicePlus")
+		--Players.PlayerRemoving:Connect(onPlayerRemoving)
+		print("[PSPlus]: Initialized ProfileServicePlus")
 	end
 end
 
 --Initiates the module
-if not ProfileServicePlus.initiated and RunService:IsServer() then
+if not ProfileServicePlus.Initialized and RunService:IsServer() then
 	Init()
 end
 
@@ -363,7 +273,7 @@ ProfileServicePlus.ProfileAdded:Connect(onProfileAdded)
 --Adds a global update type that calls back the passed listener whenever a global update with the same Type value as the passed updateType argument
 function ProfileServicePlus:AddGlobalUpdateType(updateType: string, listener, overwriteExisting: boolean)
 	--Type check updateType
-	
+
 	if overwriteExisting then
 		Global_Update_Types[updateType] = listener
 	else
@@ -387,7 +297,7 @@ function ProfileServicePlus:GetPlayerFromProfile(profileInput)
 			if profile ~= profileInput or player == nil then
 				continue
 			end
-			
+
 			output = player
 			break
 		end
@@ -420,10 +330,14 @@ function ProfileServicePlus:GetProfile(player: Instance, profileKey: string)
 	return playerProfile
 end
 
+
+
 --Attempts to load a player's specific profile
 function ProfileServicePlus:LoadProfile(player: Instance, storeKey: string, not_released_handler: string)
 	return loadProfile(player, storeKey, not_released_handler)
 end
+
+
 
 --Attempts to release a player's speific profile 
 function ProfileServicePlus:ReleaseProfile(player: Instance, storeKey: string)
@@ -431,14 +345,16 @@ function ProfileServicePlus:ReleaseProfile(player: Instance, storeKey: string)
 end
 
 
+
 --Returns a table of profiles
 function ProfileServicePlus:GetProfiles(profileStoreKey: string)
 	if profileStoreKey == nil then
 		return Loaded_Profiles 
 	end
-	
+
 	return Loaded_Profiles[profileStoreKey]
 end
+
 
 
 return ProfileServicePlus
