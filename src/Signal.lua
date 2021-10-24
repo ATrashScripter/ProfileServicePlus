@@ -23,8 +23,6 @@
 --   stravant - July 31st, 2021 - Created the file.                           --
 --------------------------------------------------------------------------------
 
---Maid class for cleaning up
-local Maid = require(script.Parent.Maid)
 
 -- The currently idle thread to run the next handler on
 local freeRunnerThread = nil
@@ -86,6 +84,8 @@ function Connection:Disconnect()
 	end
 end
 
+Connection.Destroy = Connection.Disconnect
+
 -- Make Connection strict
 setmetatable(Connection, {
 	__index = function(tb, key)
@@ -103,7 +103,6 @@ Signal.__index = Signal
 function Signal.new()
 	return setmetatable({
 		_handlerListHead = false,	
-		_maid = Maid.new(),
 	}, Signal)
 end
 
@@ -115,8 +114,7 @@ function Signal:Connect(fn)
 	else
 		self._handlerListHead = connection
 	end
-	self._maid:GiveTask(connection)
-	
+
 	return connection
 end
 
@@ -126,10 +124,6 @@ function Signal:DisconnectAll()
 	self._handlerListHead = false
 end
 
-function Signal:Destroy()
-	self:DisconnectAll()
-	self._maid:Destroy()
-end	
 
 -- Signal:Fire(...) implemented by running the handler functions on the
 -- coRunnerThread, and any time the resulting thread yielded without returning
